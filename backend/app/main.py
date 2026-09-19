@@ -1,11 +1,14 @@
 """FastAPI main application — AI Study Companion backend."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from app.workers.runner import run_worker
 
 from app.core.config import settings, validate_settings
 from app.routers import auth, spaces, projects, materials, tutor, quiz, mastery, recommendations, analytics, admin
@@ -27,9 +30,14 @@ async def lifespan(app: FastAPI):
     import os
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
+    # Start background worker on the same thread
+    logger.info("Starting background worker attached to API...")
+    worker_task = asyncio.create_task(run_worker())
+
     yield
 
     # Shutdown
+    worker_task.cancel()
     logger.info("👋 API shutting down")
 
 
