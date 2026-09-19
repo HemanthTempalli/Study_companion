@@ -33,6 +33,16 @@ def generate_embedding(text: str) -> List[float]:
 
 def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """Generate embeddings for a batch of texts."""
+    import os
+    import torch
+    
+    # Restrict PyTorch thread overhead to save RAM on 512MB instances
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    torch.set_num_threads(1)
+    
     model = get_embedding_model()
-    embeddings = model.encode(texts, normalize_embeddings=True, batch_size=32)
+    # Reduced batch_size from 32 to 8 to prevent memory spikes
+    embeddings = model.encode(texts, normalize_embeddings=True, batch_size=8)
+    
     return [e.tolist() for e in embeddings]
